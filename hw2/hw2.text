@@ -1,0 +1,60 @@
+Problem 1.
+
+My approach for this problem was to utilize the List.assoc function, which 
+basically gives us the exact function we want, where a nonterminal key is 
+associated with a list of rules. Then all we had to do was convert the original
+grammar rules into an association list, and reverse the arguments for 
+List.assoc, so that the function could be curried like we wanted. 
+
+Problem 2. 
+
+My first initial consideration was to make a brute force function that would 
+first generate all the matching prefixes for a grammar and fragment, then check
+them in order against the acceptor and return the first one that passed. 
+However, after considering the problem some more I realized that on larger 
+grammars and fragments, this approach would lead to an enormous amount of 
+wasted recursions, and was probably not the best idea. 
+
+Moving on, I broke down the overall function into two main parts, the 
+rule_matcher, which is responsible for testing the rules for a given symbol
+in the order that the rules are stored in the grammar. It ends its recursion 
+when there are no more rules for the given symbol, otherwise, it attempts to 
+match as much of the fragment as possible to the rule using the 
+fragment_matcher function, and if there is no match possible it tries the next 
+rule. Fragment_matcher is also reponsible to adding onto the derivation 
+whenever it tests a new rule. 
+
+The inner fragment_matcher is the more complicated of the two parts. It is 
+responsible for trying to match a given rule to as many individual elements 
+of the fragment as possible, by checking a potential match against the 
+acceptor. First there is a recursion that moves along the rule from left to 
+right, attempting to match a rule resulting in a Terminal with a corresponding
+element of the fragment. If we have succesfully matched every segment of the 
+rule in this way, that means we have successfully calculated a derivation for 
+some prefix of the fragment, and we are ready to check this against the 
+acceptor, thus giving us out base case. If acceptor rejects the derivation and 
+suffix, we can reject this rule. On the other hand, if we run out of 
+elements of the fragment to try to match segments of the rule to, then we have 
+exceeded the length of fragment and we can reject this rule. The other issue 
+that fragment_matcher must deal with is when it encounters a segment of the 
+rule that matches to a non-terminal. In this case, it must call the outer
+rule_matcher function, which "restarts" the process of trying to match rules
+on the new symbol. However, one thing we must account for is the remaining
+part of the rule that we have not matched yet, but still must be matched.
+This remainder of the rule is passed to the rule_matcher function as "baggage",
+and rule_matcher is responsible for adding this tail onto rules that it wants 
+to check. In this manner, rule_matcher and fragment_matcher work together 
+recursively to find the first derivable prefix that is accepted by the acceptor.
+
+One problem/weakness that I came across with my implementation during the 
+course of my testing was that it recursed infinitely on grammars where there 
+was a rule that began with a non-terminal that recursed on itself ( See 
+mygrammar for an example). In this case, my solution would continuously 
+try to follow the rule infinitely. To deal with this, I added in an 
+unfortunately arbitary check, that if the current derivation exceeds 100 times 
+the length of the fragment, the fragment matcher will stop recursing down 
+new symbols. I decided it was highly unlikely that it would be possible for the 
+derivation to exceed the length of the fragment by so much. However, this is 
+still a definite weakness in my solution, since it would fail on a grammar
+meeting these conditions that also had a derivation that greatly exceeded the 
+length of the fragment. 
